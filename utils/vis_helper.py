@@ -83,6 +83,8 @@ class Visualizer(ABC):
             cnt_pred = round(output.sum().item(), 1)
             resname = "{}_gt{}_pred{}.png".format(filename_, cnt_gt, cnt_pred)
             self.vis_result(filename, resname, height, width, output)
+            gtname = "{}_gt{}.png".format(filename_, cnt_gt)
+            self.vis_result(filename, gtname, height, width, density)
 
 
 def build_visualizer(**kwargs):

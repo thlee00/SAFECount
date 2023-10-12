@@ -1,3 +1,6 @@
+import sys
+sys.path.append(r"C:\Users\Researcher\SAFECount")
+
 import argparse
 import logging
 import os
@@ -54,7 +57,7 @@ def main():
         visualizer = build_visualizer(**config.visualizer)
 
     config.port = config.get("port", None)
-    rank, world_size = setup_distributed(port=config.port)
+    rank = 0 # rank, world_size = setup_distributed(port=config.port)
 
     if rank == 0:
         os.makedirs(config.save_path, exist_ok=True)
@@ -79,24 +82,24 @@ def main():
     # create model
     model = build_network(config.net)
     model.cuda()
-    local_rank = int(os.environ["LOCAL_RANK"])
-    model = DDP(
-        model,
-        device_ids=[local_rank],
-        output_device=local_rank,
-        find_unused_parameters=True,
-    )
+    # local_rank = int(os.environ["LOCAL_RANK"])
+    # model = DDP(
+    #     model,
+    #     device_ids=[local_rank],
+    #     output_device=local_rank,
+    #     find_unused_parameters=True,
+    # )
 
     # parameters
     model.train()
     lr_scale_backbone = config.trainer["lr_scale_backbone"]
     if lr_scale_backbone == 0:
-        model.module.backbone.eval()
-        for p in model.module.backbone.parameters():
+        model.backbone.eval()
+        for p in model.backbone.parameters():
             p.requires_grad = False
         # parameters not include backbone
         parameters = [
-            p for n, p in model.module.named_parameters() if "backbone" not in n
+            p for n, p in model.named_parameters() if "backbone" not in n
         ]
     else:
         assert lr_scale_backbone > 0 and lr_scale_backbone <= 1
@@ -104,7 +107,7 @@ def main():
             {
                 "params": [
                     p
-                    for n, p in model.module.named_parameters()
+                    for n, p in model.named_parameters()
                     if "backbone" not in n and p.requires_grad
                 ],
                 "lr": config.trainer.optimizer.kwargs.lr,
@@ -112,7 +115,7 @@ def main():
             {
                 "params": [
                     p
-                    for n, p in model.module.named_parameters()
+                    for n, p in model.named_parameters()
                     if "backbone" in n and p.requires_grad
                 ],
                 "lr": lr_scale_backbone * config.trainer.optimizer.kwargs.lr,
@@ -143,7 +146,7 @@ def main():
         load_state(load_path, model)
 
     train_loader, val_loader, test_loader = build_dataloader(
-        config.dataset, distributed=True
+        config.dataset, distributed=False
     )
 
     if args.evaluate:
@@ -184,12 +187,12 @@ def train_one_epoch(train_loader, model, optimizer, criterion, lr_scheduler, epo
 
     model.train()
     if lr_scale_backbone == 0:
-        model.module.backbone.eval()
-        for p in model.module.backbone.parameters():
+        model.backbone.eval()
+        for p in model.backbone.parameters():
             p.requires_grad = False
 
     logger = logging.getLogger("global_logger")
-    rank = dist.get_rank()
+    rank = 0 # rank = dist.get_rank()
     if rank == 0:
         logger.info("Training on train set dataset")
     train_loss = 0
@@ -259,14 +262,14 @@ def train_one_epoch(train_loader, model, optimizer, criterion, lr_scheduler, epo
 def eval(val_loader, model, criterion):
     model.eval()
     logger = logging.getLogger("global_logger")
-    rank = dist.get_rank()
+    rank = 0 # rank = dist.get_rank()
     if rank == 0:
         logger.info("Evaluation on val dataset or test dataset")
 
     if rank == 0:
         os.makedirs(config.evaluator.eval_dir, exist_ok=True)
     # all threads write to config.evaluator.eval_dir, it must be made before every thread begin to write
-    dist.barrier()
+    # dist.barrier()
 
     with torch.no_grad():
         for i, sample in enumerate(val_loader):
@@ -296,7 +299,7 @@ def eval(val_loader, model, criterion):
                 )
 
     # gather final results
-    dist.barrier()
+    # dist.barrier()
     if rank == 0:
         logger.info("gather final results")
 
@@ -314,8 +317,8 @@ def eval(val_loader, model, criterion):
 
     model.train()
     if lr_scale_backbone == 0:
-        model.module.backbone.eval()
-        for p in model.module.backbone.parameters():
+        model.backbone.eval()
+        for p in model.backbone.parameters():
             p.requires_grad = False
 
     return val_mae, val_rmse

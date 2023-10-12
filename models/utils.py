@@ -1,3 +1,6 @@
+import sys
+sys.path.append(r"C:\Users\Researcher\SAFECount")
+
 import copy
 import os
 

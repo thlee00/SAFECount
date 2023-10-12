@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 
+from collections import OrderedDict
 
 def basicConfig(*args, **kwargs):
     return
@@ -93,7 +94,7 @@ def save_checkpoint(state, is_best, config):
 
 def load_state(path, model, optimizer=None):
 
-    rank = dist.get_rank()
+    rank = 0 # rank = dist.get_rank()
 
     def map_func(storage, location):
         return storage.cuda()
@@ -106,11 +107,21 @@ def load_state(path, model, optimizer=None):
 
         # fix size mismatch error
         ignore_keys = []
+        new_state_dict = OrderedDict()
         for k, v in checkpoint["state_dict"].items():
-            if k in model.state_dict().keys():
-                v_dst = model.state_dict()[k]
+            if k.startswith("module."):
+                k_ = k[7:]
+            else: k_ = k
+            new_state_dict[k_] = v
+
+            # resnet 18에 해당하는 backbone weight 없애기
+            # if k_.startswith("backbone") or k_.startswith("in_conv"):
+            #     ignore_keys.append(k_)
+
+            if k_ in model.state_dict().keys():
+                v_dst = model.state_dict()[k_]
                 if v.shape != v_dst.shape:
-                    ignore_keys.append(k)
+                    ignore_keys.append(k_)
                     if rank == 0:
                         print(
                             "caution: size-mismatch key: {} size: {} -> {}".format(
@@ -119,12 +130,12 @@ def load_state(path, model, optimizer=None):
                         )
 
         for k in ignore_keys:
-            checkpoint["state_dict"].pop(k)
+            new_state_dict.pop(k)
 
-        model.load_state_dict(checkpoint["state_dict"], strict=False)
-
+        model.load_state_dict(new_state_dict, strict=False)
+        
         if rank == 0:
-            ckpt_keys = set(checkpoint["state_dict"].keys())
+            ckpt_keys = set(new_state_dict.keys())
             own_keys = set(model.state_dict().keys())
             missing_keys = own_keys - ckpt_keys
             for k in missing_keys:

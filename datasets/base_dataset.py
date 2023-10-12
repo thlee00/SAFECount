@@ -67,7 +67,9 @@ class BaseTransform(object):
         # resize boxes
         boxes_rsz = []
         for box in boxes:
-            y_tl, x_tl, y_br, x_br = box
+            # y_tl, x_tl, y_br, x_br = box
+            x_tl, y_tl = box[0]
+            x_br, y_br = box[-1]
             y_tl = int(y_tl * h_scale)
             y_br = int(y_br * h_scale)
             x_tl = int(x_tl * w_scale)

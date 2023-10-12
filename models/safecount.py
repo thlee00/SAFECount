@@ -81,6 +81,7 @@ class SAFECount(nn.Module):
         )
         density_pred = self.count_regressor(output)
         input.update({"density_pred": density_pred})
+        input.update({"pred_cnt": density_pred.sum()})
         return input
 
 

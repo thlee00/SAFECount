@@ -30,7 +30,7 @@ dataset:
   val:
     meta_file: ../../data/FSC147_384_V2/val.json
   test:
-    meta_file: ../../data/FSC147_384_V2/test.json
+    meta_file: ../../data/FSC147_384_V2/test_all.json
 
 criterion:
   - name: _MSELoss

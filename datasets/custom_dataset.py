@@ -17,7 +17,7 @@ from datasets.transforms import RandomColorJitter
 
 
 def build_custom_dataloader(cfg, training, distributed=True):
-    rank = dist.get_rank()
+    rank = 0 # rank = dist.get_rank()
 
     normalize_fn = transforms.Normalize(mean=cfg["pixel_mean"], std=cfg["pixel_std"])
 
@@ -93,10 +93,8 @@ class CustomDataset(BaseDataset):
             meta_file = [meta_file]
         self.metas = []
         for _meta_file in meta_file:
-            with open(_meta_file, "r+") as f_r:
-                for line in f_r:
-                    meta = json.loads(line)
-                    self.metas.append(meta)
+            with open(_meta_file, "r+", encoding="UTF-8") as f_r:
+                self.metas = json.load(f_r)
 
     def __len__(self):
         return len(self.metas)
@@ -104,7 +102,7 @@ class CustomDataset(BaseDataset):
     def __getitem__(self, index):
         meta = self.metas[index]
         # read img
-        img_name = meta["filename"]
+        img_name = meta["fileName"]
         img_path = os.path.join(self.img_dir, img_name)
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
