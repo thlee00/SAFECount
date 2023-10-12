@@ -13,3 +13,14 @@ experiments/*/*/vis*/*
 experiments/*/checkpoints*/*
 experiments/*/log*/*
 experiments/*/vis*/*
+
+*.jpg
+*.png
+*.npy
+
+tools/wandb/
+experiments/wandb/
+
+*.log
+*.txt
+*.tar
