@@ -52,7 +52,7 @@ class SAFECount(nn.Module):
 
     def forward(self, input):
         image = input["image"]  # [1,c,h,w]
-        assert image.shape[0] == 1, "Batch size must be 1!"
+        # assert image.shape[0] == 1, "Batch size must be 1!"
         boxes = input["boxes"].squeeze(0)  # [1,m,4] -> [m,4]
         feat = self.in_conv(self.backbone(image))
         # multi-scale exemplars

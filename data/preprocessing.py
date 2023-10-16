@@ -6,7 +6,7 @@ import cv2
 import os
 import random
 
-dataset_name = 'mnm'
+dataset_name = 'FSC147_384_V2'
 neurocle_file_name = f'{dataset_name}_bbox_annotation'
 anno_file_name = f'{dataset_name}_annotation'
 

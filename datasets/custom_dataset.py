@@ -64,6 +64,7 @@ def build_custom_dataloader(cfg, training, distributed=True):
         num_workers=cfg["workers"],
         pin_memory=True,
         sampler=sampler,
+        # collate_fn=collate_fn
     )
 
     return data_loader

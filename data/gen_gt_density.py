@@ -4,6 +4,8 @@ import os
 import cv2
 import numpy as np
 
+from tqdm import tqdm
+
 def gen_gaussian2d(shape, sigma=1):
     h, w = [_ // 2 for _ in shape]
     y, x = np.ogrid[-h : h + 1, -w : w + 1]
@@ -12,26 +14,19 @@ def gen_gaussian2d(shape, sigma=1):
     return gaussian
 
 
-def draw_gaussian(density, center, radius, k=1, delte=6, overlap="add"): #draw_gaussian(density, point, radius, overlap="max")
-    print("rad: ", radius)
+def draw_gaussian(density, center, radius, k=1, delte=6, overlap="add"):
     diameter = 2 * radius + 1
-    gaussian = gen_gaussian2d((1, 1), sigma=1)
-    print("gaussian: ", gaussian.shape)
+    gaussian = gen_gaussian2d((diameter, diameter), sigma=diameter / delte)
     x, y = center
     height, width = density.shape[0:2]
     left, right = min(x, radius), min(width - x, radius + 1)
     top, bottom = min(y, radius), min(height - y, radius + 1)
     if overlap == "max":
         masked_density = density[y - top : y + bottom, x - left : x + right]
-        print("denst: ", masked_density.shape)
-        masked_gaussian = np.zeros((y + bottom - y + top, x + right - x + left), dtype=np.float32)  # [h, w]
-        print("gauss: ", masked_gaussian.shape)
-        temp_zero = np.zeros((radius + bottom - radius + top, radius + right - radius + left))
-        print("zeros: ", temp_zero.shape)
-        masked_gaussian[radius - top : radius + bottom, radius - left : radius + right] = gaussian[
+        masked_gaussian = gaussian[
             radius - top : radius + bottom, radius - left : radius + right
         ]
-        np.maximum(masked_density, (masked_gaussian * k), out=masked_density)
+        np.maximum(masked_density, masked_gaussian * k, out=masked_density)
     elif overlap == "add":
         density[y - top : y + bottom, x - left : x + right] += gaussian[
             radius - top : radius + bottom, radius - left : radius + right
@@ -48,7 +43,7 @@ def _min_dis_global(points):
     for point in points:
         point = point[None, :]  # 2 -> 1 x 2
         dis = np.sqrt(np.sum((points - point) ** 2, axis=1))  # m x 2 -> m
-        dis = sorted(dis)[1] # 가장 가까운 거리
+        dis = sorted(dis)[1]
         if dis_min > dis:
             dis_min = dis
     return dis_min
@@ -65,17 +60,17 @@ def points2density(points, radius_backup=None):
     elif num_points == 1:
         radius = radius_backup
     else:
-        radius = min(int(_min_dis_global(points)), radius_backup) # 가장 가까운 거리
+        radius = min(int(_min_dis_global(points)), radius_backup)
     for point in points:
         draw_gaussian(density, point, radius, overlap="max")
     return density
 
 
 if __name__ == "__main__":
-    dataset_name = 'mnm'
+    dataset_name = 'mvtec'
     root_dir = f"./{dataset_name}/{dataset_name}_image/"
-    gt_dir = "./gt_density_map/"
-    split_name = '8-2_random'
+    gt_dir = f"./{dataset_name}/gt_density_map/"
+    split_name = ''
     set_name = ''
     os.makedirs(gt_dir, exist_ok=True)
 
@@ -84,7 +79,7 @@ if __name__ == "__main__":
     anno_files = [f"train{set_name}.json", f"val{set_name}.json", f"test{set_name}.json"]
     for anno_file in anno_files:
         print("json: ", anno_file)
-        with open(f"{split_name}/{anno_file}", "r") as fr:
+        with open(f"{dataset_name}/{split_name}/{anno_file}", "r") as fr:
             # for line in fr:
             #     print(line)
             #     meta = json.loads(line)
@@ -92,7 +87,7 @@ if __name__ == "__main__":
             metas = json.load(fr)
     
         # create gt density map
-        for meta in metas:
+        for meta in tqdm(metas):
             filename = meta["fileName"]
             filepath = os.path.join(root_dir, filename)
             image = cv2.imread(filepath)
@@ -120,4 +115,4 @@ if __name__ == "__main__":
             save_path = os.path.join(gt_dir, filename_ + ".npy")
             np.save(save_path, density)
 
-            print(f"Success: generate gt density map for {filename}")
+            # print(f"Success: generate gt density map for {filename}")

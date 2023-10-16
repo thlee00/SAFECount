@@ -3,7 +3,7 @@ import os
 import random
 import copy
 
-dataset_name = 'mnm'
+dataset_name = 'FSC147_384_V2'
 neurocle_file_name = f'{dataset_name}_bbox_annotation'
 anno_file_name = f'{dataset_name}_annotation'
 
@@ -19,7 +19,7 @@ with open(f"{dataset_name}/{split_name}/{anno_file_name}.json", "r") as anno_jso
     for item in data:
         data_annotations.append({
                 "fileName": item,
-                "density": item.split('.png')[0] + '.npy',
+                "density": item.split('.jpg')[0] + '.npy',
                 "boxes": data[item]["box_examples_coordinates"],
                 "points": data[item]["points"]
         })

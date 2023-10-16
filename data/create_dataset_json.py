@@ -2,7 +2,7 @@ import json
 import os
 import random
 
-dataset_name = 'mnm'
+dataset_name = 'mvtec'
 neurocle_file_name = f'{dataset_name}_bbox_annotation'
 anno_file_name = f'{dataset_name}_annotation'
 split_name = ''
@@ -33,11 +33,12 @@ def train_test_val(data):
             train_items.append(data)
         else:
             new_data["test"].append(data)
-    num_train = len(train_items)
-    num_train_val = int(num_train * 0.8)
     random.shuffle(train_items)
+    num_train = 50
+    num_train_val = int(num_train * 0.8)
     new_data["train"] = train_items[:num_train_val]
-    new_data["val"] = train_items[num_train_val:]
+    new_data["val"] = train_items[num_train_val:num_train]
+    new_data["test"] = train_items[num_train:]
 
     createDirectory(f'{split_name}')
 
@@ -82,17 +83,18 @@ for data_subset in train_test_val_set:
         if data_name in boxes_data:
             data_annotations.append({
                 "fileName": data_name,
-                "density": data_name.split('.png')[0] + '.npy',
+                "density": data_name.split('.jpg')[0] + '.npy',
                 "boxes": boxes_data[data_name],
                 "points": points_data[data_name]
             })
         else:
             data_annotations.append({
                 "fileName": data_name,
-                "density": data_name.split('.png')[0] + '.npy',
+                "density": data_name.split('.jpg')[0] + '.npy',
                 "boxes": [],
                 "points": []
             })
     # "train.json" 파일에 데이터 쓰기
     with open(f"{dataset_name}/{split_name}/{data_subset}{set_name}.json", "w") as output:
         json.dump(data_annotations, output, indent=4)
+        print(f"{data_subset} done...")

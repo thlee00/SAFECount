@@ -30,6 +30,8 @@ from utils.misc_helper import (
 from utils.optimizer_helper import get_optimizer
 from utils.vis_helper import build_visualizer
 
+import wandb
+
 parser = argparse.ArgumentParser(description="Few Shot Counting Evaluation code")
 parser.add_argument(
     "-c", "--config", type=str, default="./config.yaml", help="Path of config"
@@ -149,21 +151,32 @@ def main():
         config.dataset, distributed=False
     )
 
+    if not args.evaluate and not args.test:
+        wandb.init(project="mvtec_counting")
+
     if args.evaluate:
-        val_mae, val_rmse = eval(val_loader, model, criterion)
+        val_mae, val_rmse, acc = eval(val_loader, model, criterion)
         return
 
     if args.test:
-        test_mae, test_rmse = eval(test_loader, model, criterion)
+        test_mae, test_rmse, acc = eval(test_loader, model, criterion)
+        with open(os.path.join(config.visualizer.vis_dir, "result.txt"), 'w') as f:
+            f.write(f"Test MAE: {test_mae}\n")
+            f.write(f"Test RMSE: {test_rmse}\n")
+            f.write(f"Test acc: {acc}")
         return
 
     for epoch in range(last_epoch, config.trainer.epochs):
-        train_loader.sampler.set_epoch(epoch)
+        # train_loader.sampler.set_epoch(epoch)
 
         train_one_epoch(train_loader, model, optimizer, criterion, lr_scheduler, epoch)
         lr_scheduler.step(epoch + 1)
 
-        val_mae, val_rmse = eval(val_loader, model, criterion)
+        val_mae, val_rmse, acc = eval(val_loader, model, criterion)
+        
+        wandb.log({"Val MAE (epoch)": val_mae})
+        wandb.log({"Val RMSE (epoch)": val_rmse})
+        wandb.log({"Val acc (epoch)": acc})
 
         if rank == 0:
             is_best = False
@@ -202,7 +215,7 @@ def train_one_epoch(train_loader, model, optimizer, criterion, lr_scheduler, epo
         time_data = time.time() - end
 
         iter = i + 1
-        current_lr = lr_scheduler.get_lr()[0]
+        current_lr = lr_scheduler.get_last_lr()[0]
         sample = to_device(sample, device=torch.device("cuda"))
         # forward
         outputs = model(sample)  # 1 x 1 x h x w
@@ -247,9 +260,12 @@ def train_one_epoch(train_loader, model, optimizer, criterion, lr_scheduler, epo
         logger.info("gather final results")
     train_loss = torch.Tensor([train_loss]).cuda()
     iter = torch.Tensor([iter]).cuda()
-    dist.all_reduce(train_loss)
-    dist.all_reduce(iter)
+    # dist.all_reduce(train_loss)
+    # dist.all_reduce(iter)
     train_loss = train_loss.item() / iter.item()
+
+    wandb.log({"lr (epoch)": current_lr})
+    wandb.log({"Train Loss (epoch)": train_loss})
 
     if rank == 0:
         logger.info(
@@ -271,6 +287,7 @@ def eval(val_loader, model, criterion):
     # all threads write to config.evaluator.eval_dir, it must be made before every thread begin to write
     # dist.barrier()
 
+    correct = 0
     with torch.no_grad():
         for i, sample in enumerate(val_loader):
             iter = i + 1
@@ -297,6 +314,8 @@ def eval(val_loader, model, criterion):
                         iter, len(val_loader), gt_cnt, pred_cnt, best_mae, best_rmse
                     )
                 )
+            correct += int(int(gt_cnt) == round(pred_cnt))
+        acc = correct / (i + 1) * 100
 
     # gather final results
     # dist.barrier()
@@ -321,7 +340,7 @@ def eval(val_loader, model, criterion):
         for p in model.backbone.parameters():
             p.requires_grad = False
 
-    return val_mae, val_rmse
+    return val_mae, val_rmse, acc
 
 
 if __name__ == "__main__":
