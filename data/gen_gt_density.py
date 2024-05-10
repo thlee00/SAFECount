@@ -67,7 +67,7 @@ def points2density(points, radius_backup=None):
 
 
 if __name__ == "__main__":
-    dataset_name = 'mvtec'
+    dataset_name = 'choco'
     root_dir = f"./{dataset_name}/{dataset_name}_image/"
     gt_dir = f"./{dataset_name}/gt_density_map/"
     split_name = ''

@@ -11,13 +11,13 @@ def dump(save_dir, outputs):
     density = outputs["density"]  # b x 1 x h x w
     density_pred = outputs["density_pred"]  # b x 1 x h x w
     gt_cnt = torch.sum(density, dim=(2, 3)).cpu().numpy()  # b x 1
-    pred_cnt = torch.sum(density_pred, dim=(2, 3)).cpu().numpy()  # b x 1
+    pred_cnt = outputs["pred_cnt"] #torch.sum(density_pred, dim=(2, 3)).cpu().numpy()  # b x 1
     for i in range(batch_size):
         file_dir, filename = os.path.split(filenames[i])
         filename, _ = os.path.splitext(filename)
         save_file = os.path.join(save_dir, filename + ".npz")
         np.savez(
-            save_file, filename=filenames[i], gt_cnt=gt_cnt[i], pred_cnt=pred_cnt[i]
+            save_file, filename=filenames[i], gt_cnt=gt_cnt[i], pred_cnt=[float(pred_cnt)]
         )
 
 

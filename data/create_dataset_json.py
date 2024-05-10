@@ -34,7 +34,7 @@ def train_test_val(data):
         else:
             new_data["test"].append(data)
     random.shuffle(train_items)
-    num_train = 50
+    num_train = 10
     num_train_val = int(num_train * 0.8)
     new_data["train"] = train_items[:num_train_val]
     new_data["val"] = train_items[num_train_val:num_train]
@@ -52,6 +52,7 @@ if not os.path.isfile(f'{dataset_name}/{split_name}/{dataset_name}_train_test_va
 
     # create train_test_val json
     train_test_val(json_data)
+    print("create train_test_vla json file")
 
 # train_test_val 파일에서 "train"에 해당하는 데이터 이름 추출하여 리스트로 저장
 for data_subset in train_test_val_set:

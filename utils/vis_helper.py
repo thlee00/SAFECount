@@ -41,7 +41,7 @@ class Visualizer(ABC):
             raise NotImplementedError
 
     def apply_scoremap(self, image, scoremap, alpha=0.5):
-        np_image = np.asarray(image, dtype=np.float)
+        np_image = np.asarray(image, dtype=np.float64)
         scoremap = (scoremap * 255).astype(np.uint8)
         scoremap = cv2.applyColorMap(scoremap, cv2.COLORMAP_JET)
         scoremap = cv2.cvtColor(scoremap, cv2.COLOR_BGR2RGB)
@@ -80,7 +80,7 @@ class Visualizer(ABC):
         ):
             filename_, _ = os.path.splitext(filename)
             cnt_gt = int(density.sum().round())
-            cnt_pred = round(output.sum().item(), 1)
+            cnt_pred = input["pred_cnt"] #round(output.sum().item(), 1)
             resname = "{}_gt{}_pred{}.png".format(filename_, cnt_gt, cnt_pred)
             self.vis_result(filename, resname, height, width, output)
             gtname = "{}_gt{}.png".format(filename_, cnt_gt)

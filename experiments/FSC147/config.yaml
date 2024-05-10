@@ -3,7 +3,7 @@ random_seed: 131
 
 dataset:
   type: custom
-  shot: null
+  shot: 3
   img_dir: &img_dir ../../data/FSC147_384_V2/images_384_VarV2/
   density_dir: ../../data/FSC147_384_V2/gt_density_map_adaptive_384_VarV2/
   input_size: [512, 512] # [h, w]

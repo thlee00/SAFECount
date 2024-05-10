@@ -231,7 +231,7 @@ def train_one_epoch(train_loader, model, optimizer, criterion, lr_scheduler, epo
         density = outputs["density"]
         density_pred = outputs["density_pred"]
         train_loss += loss.item()
-        pred_cnt = torch.sum(density_pred).item()
+        pred_cnt = outputs["pred_cnt"]
         gt_cnt = torch.sum(density).item()
 
         time_epoch = time.time() - end
@@ -302,7 +302,7 @@ def eval(val_loader, model, criterion):
 
             density = outputs["density"]
             density_pred = outputs["density_pred"]
-            pred_cnt = torch.sum(density_pred).item()
+            pred_cnt = outputs["pred_cnt"]
             gt_cnt = torch.sum(density).item()
 
             if (args.evaluate or args.test) and config.get("visualizer", None):

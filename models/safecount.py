@@ -13,6 +13,9 @@ from models.utils import (
 )
 from utils.init_helper import initialize_from_cfg
 
+from skimage.feature import peak_local_max
+from skimage import img_as_float
+from scipy import ndimage as ndi
 
 class SAFECount(nn.Module):
     def __init__(
@@ -52,7 +55,7 @@ class SAFECount(nn.Module):
 
     def forward(self, input):
         image = input["image"]  # [1,c,h,w]
-        # assert image.shape[0] == 1, "Batch size must be 1!"
+        assert image.shape[0] == 1, "Batch size must be 1!"
         boxes = input["boxes"].squeeze(0)  # [1,m,4] -> [m,4]
         feat = self.in_conv(self.backbone(image))
         # multi-scale exemplars
@@ -81,7 +84,21 @@ class SAFECount(nn.Module):
         )
         density_pred = self.count_regressor(output)
         input.update({"density_pred": density_pred})
-        input.update({"pred_cnt": density_pred.sum()})
+        
+        im = density_pred.cpu().detach().numpy()
+        im = im.squeeze(0)
+        im = im.squeeze(0)
+        image_max = ndi.maximum_filter(im, size=3, mode='constant')
+        coordinates = peak_local_max(image_max, threshold_rel = 0.4, min_distance=15)
+
+        # image_max = torch.from_numpy(image_max).to(device=torch.device("cuda")).unsqueeze(0)
+        # image_max = image_max.unsqueeze(0)
+        # input.update({"density_pred": image_max})
+
+        input.update({"pred_loc": coordinates})
+        input.update({"pred_cnt": len(coordinates)})
+        # input.update({"pred_cnt": round(density_pred.sum().item(), 1)})
+
         return input
 
 

@@ -6,7 +6,9 @@ import cv2
 import os
 import random
 
-dataset_name = 'FSC147_384_V2'
+from tqdm import tqdm
+
+dataset_name = 'mvtec'
 neurocle_file_name = f'{dataset_name}_bbox_annotation'
 anno_file_name = f'{dataset_name}_annotation'
 
@@ -14,7 +16,7 @@ anno_file_name = f'{dataset_name}_annotation'
 def convert_json(json_data):
     converted_data = {}
 
-    for item in json_data['data']:
+    for item in tqdm(json_data['data']):
         file_name = item['fileName']
         if file_name not in converted_data:
                 converted_data[file_name] = {
